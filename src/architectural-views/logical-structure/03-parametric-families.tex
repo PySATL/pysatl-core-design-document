@@ -15,10 +15,10 @@
 Реестр семейств, используется, чтобы в будущем можно было реализовывать переходы между распределениями из семейств, при каких-то операциях
 
 Каждое семейство является объектом класса \texttt{ParametricFamily}. Это позволяет использовать систему с реестром, а также:
-\begin{itemizecmp}
+\begin{itemize}[compact]
     \item Добавлять пользовательские параметризации для распределений;
     \item Добавлять новые \texttt{AnalyticalComputation} для распределений,
-\end{itemizecmp}
+\end{itemize}
 не модифицируя исходный код семейства. 
 
 На данный момент за работу с несколькими параметризациями отвечает класс \texttt{ParametrizationSpec}. Его объекты описывают какие параметризации есть у семейства, и кто из них является канонической. Сейчас используется следующий механизм: все аналитические вычисления задаются в базовой параметризации, далее каждая параметризация указывает, как из нее получить базовую параметризацию. 
@@ -28,15 +28,15 @@
 \noindent \texttt{ParametricFamiliesRegister} (Реестр параметрических семейств)
 \begin{itemize}[noitemsep, topsep=0pt, parsep=0pt]
     \item \textbf{Назначение}: Синглтон-класс для глобальной регистрации и доступа ко всем параметрическим семействам.\item \textbf{Поля}:
-    \begin{itemizecmp}
+    \begin{itemize}[compact]
         \item \texttt{\_instance} - единственный экземпляр реестра
         \item \texttt{\_registered\_families} - словарь зарегистрированных семейств
-    \end{itemizecmp}
+    \end{itemize}
     \item \textbf{Методы}:
-    \begin{itemizecmp}
+    \begin{itemize}[compact]
         \item \texttt{get(name)} - получение семейства по имени
         \item \texttt{register(family)} - регистрация нового семейства
-    \end{itemizecmp}
+    \end{itemize}
 \end{itemize}
 
 \noindent \texttt{ParametrizationConstraint} (Ограничение параметризации)
@@ -44,10 +44,10 @@
     \item \textbf{Назначение}: Контейнер для ограничений на значения параметров распределения.
 
     \item \textbf{Поля}:
-    \begin{itemizecmp}
+    \begin{itemize}[compact]
         \item \texttt{description} - текстовое описание ограничения
         \item \texttt{check} - функция проверки ограничения
-    \end{itemizecmp}
+    \end{itemize}
 \end{itemize}
 
 \noindent \texttt{Parametrization} (Абстрактный класс параметризации)
@@ -55,39 +55,39 @@
     \item \textbf{Назначение}: Абстрактный базовый класс для всех параметризаций распределений.
 
     \item \textbf{Поля}:
-    \begin{itemizecmp}
+    \begin{itemize}[compact]
         \item \texttt{constraints} - список ограничений параметров
-    \end{itemizecmp}
+    \end{itemize}
 
     \item \textbf{Абстрактные свойства}:
-    \begin{itemizecmp}
+    \begin{itemize}[compact]
         \item \texttt{name} - имя параметризации
         \item \texttt{parameters} - словарь параметров
-    \end{itemizecmp}
+    \end{itemize}
 
     \item \textbf{Методы}:
-    \begin{itemizecmp}
+    \begin{itemize}[compact]
         \item \texttt{validate()} - проверка всех ограничений
         \item \texttt{transform\_to\_base\_parametrization()} - преобразование к базовой параметризации.
-    \end{itemizecmp}
+    \end{itemize}
 \end{itemize}
 
 \noindent \texttt{ParametrizationSpec} (Спецификация параметризаций)
-    \begin{itemize}[noitemsep, topsep=0pt, parsep=0pt]
+\begin{itemize}[noitemsep, topsep=0pt, parsep=0pt]
     \item \textbf{Назначение}: Контейнер для управления множественными параметризациями семейства.
 
     \item \textbf{Поля}:
-    \begin{itemizecmp}
+    \begin{itemize}[compact]
         \item \texttt{parametrizations} - словарь всех параметризаций
         \item \texttt{base\_parametrization\_name} - имя базовой параметризации
-    \end{itemizecmp}
+    \end{itemize}
 
     \item \textbf{Методы}:
-    \begin{itemizecmp}
+    \begin{itemize}[compact]
         \item \texttt{base} - получение класса базовой параметризации
         \item \texttt{add\_parametrization()} - добавление новой параметризации
         \item \texttt{get\_base\_parameters()} - преобразование параметров к базовой форме
-    \end{itemizecmp}
+    \end{itemize}
 \end{itemize}
 
 
@@ -96,19 +96,19 @@
     \item \textbf{Назначение}: Представление семейства распределений с различными параметризациями.
 
     \item \textbf{Поля}:
-    \begin{itemizecmp}
+    \begin{itemize}[compact]
         \item \texttt{name} - имя семейства
         \item \texttt{distr\_type} - тип распределения
         \item \texttt{parametrizations} - спецификация параметризаций
         \item \texttt{distr\_characteristics} - характеристики распределения
         \item \texttt{sampling\_strategy} - стратегия семплирования
         \item \texttt{computation\_strategy} - стратегия вычислений
-    \end{itemizecmp}
+    \end{itemize}
 
     \item \textbf{Методы}:
-    \begin{itemizecmp}
+    \begin{itemize}[compact]
         \item \texttt{\_\_call\_\_()} - создание экземпляра распределения
-    \end{itemizecmp}
+    \end{itemize}
 \end{itemize}
 
 
@@ -117,47 +117,44 @@
     \item \textbf{Назначение}: Конкретный экземпляр распределения с определенными параметрами. Реализует протокол \texttt{Distribution}
 
     \item \textbf{Поля}:
-    \begin{itemizecmp}
+    \begin{itemize}[compact]
         \item \texttt{distr\_name} - имя семейства
         \item \texttt{distribution\_type} - тип распределения
         \item \texttt{parameters} - параметры распределения
-    \end{itemizecmp}
+    \end{itemize}
 
     \item \textbf{Свойства}:
-    \begin{itemizecmp}
+    \begin{itemize}[compact]
         \item \texttt{family} - ссылка на родительское семейство
-    \end{itemizecmp}
+    \end{itemize}
 \end{itemize}
 
 \subsubsection{Типичные сценарии использования}
 
 \paragraph{Определение нового семейства распределений}
 Пользователь создает новое параметрическое семейство, определяя:
-\begin{itemizecmp}
+\begin{itemize}[compact]
     \item Различные параметризации (каноническая, mean-var, etc.)
     \item Ограничения на параметры
     \item Функции для вычисления характеристик (PDF, CDF, etc.), доступные аналитически 
     \item Стратегии семплирования и вычислений
-\end{itemizecmp}
+\end{itemize}
 
 \paragraph{Создание экземпляра распределения}
 Пользователь создает конкретное распределение, указывая:
-\begin{itemizecmp}
+\begin{itemize}[compact]
     \item Имя семейства
     \item Параметризацию (как минимум одну)
     \item Значения параметров
-\end{itemizecmp}
+\end{itemize}
 
 \paragraph{Вычисление характеристик распределения}
 Система автоматически:
-\begin{itemizecmp}
+\begin{itemize}[compact]
     \item Проверяет корректность параметров
     \item При необходимости преобразует к базовой параметризации
     \item Вычисляет запрошенные характеристики
-\end{itemizecmp}
+\end{itemize}
 
 \paragraph{Генерация выборок}
 Используется зарегистрированная стратегия семплирования для генерации данных из распределения.
-
-
-\end{document}
