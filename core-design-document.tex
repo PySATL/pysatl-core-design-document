@@ -1,7 +1,5 @@
 \documentclass{designdoc}
 \setcounter{secnumdepth}{3} 
-\usepackage{todonotes}
-
 \usetikzlibrary{babel}
 
 \newmathcommand{\pmf}{f}
@@ -13,7 +11,26 @@
 \newmathcommand{\chdf}{H}
 \newmathcommand{\MGF}{M}
 
+\ConditionalFunctionalOperator{\IQR}{\mathrm{IQR}} 
+\ConditionalFunctionalOperator{\Med}{\mathrm{med}}  
+\ConditionalFunctionalOperator{\Mode}{\mathrm{mode}}  
 
+\newmathcommand{\Mellin}{\mathcal{M}}
+\newmathcommand{\Laplace}{\mathcal{L}}
+
+\newcommand{\mleb}{m_{\mathrm{Leb}}}
+\newcommand{\deq}{\overset{\text{\tiny d}}{=}}
+
+\newlength{\figurewidth}
+\setlength{\figurewidth}{0.9\linewidth}
+\newlength{\wrapfigurewidth}
+\setlength{\wrapfigurewidth}{0.4\linewidth}
+\newtheorem*{example}{Пример}
+\graphicspath{{assets/images/}}
+\DeclareGraphicsExtensions{.pdf,.png,.jpg}
+
+% BUGFIX
+\DeclareBracedMathOperator*{\argmax}{argmax}
 \title{Дизайн документ. Ядро PySATL}
 \author{Михаил Михайлов, Леонид Елкин}
 \date{\today}
@@ -29,6 +46,6 @@
 \input{src/chapter-04}
 \input{src/chapter-05}
 
-
+\nocite{*}
 \printbibliography
 \end{document}
