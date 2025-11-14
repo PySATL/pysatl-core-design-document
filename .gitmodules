@@ -1,0 +1,3 @@
+[submodule "configuration"]
+	path = configuration
+	url = https://github.com/Desiment/desiment-latex-preamble

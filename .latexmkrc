@@ -1,4 +1,6 @@
-ensure_path( 'TEXINPUTS', './configuration/' );
+ensure_path( 'TEXINPUTS', 'configuration' );
+ensure_path( 'TEXINPUTS', 'configuration/packages//');
+ensure_path( 'LUAINPUTS', 'configuration' );
 $pdf_mode=4;
 $lualatex = 'lualatex  %O -halt-on-error -synctex=1 --shell-escape %S';
 $out_dir = '.';
@@ -23,7 +25,7 @@ sub mmz_analyze {
     my $base = $$Pbase;
     my $mmz_file = "$aux_dir1$base.mmz";
     $mmz_has_new = '';
-    
+
     if (! -e $mmz_file) {
         print "mmz_analyze: No mmz file '$mmz_file', so memoize is not being used.\n";
         return 0;
@@ -46,7 +48,7 @@ sub mmz_analyze {
          s/\s*$//;           # Remove trailing space, including new lines
          if ( /^\\mmzNewExtern\s+{([^}]+)}/ ) {
              # We have a new memo item without a corresponding pdf file.
-             # It will be put in the aux directory. 
+             # It will be put in the aux directory.
              my $file = "$aux_dir1$1";
              print "mmz_analyze: new extern for memoize: '$file'\n";
              push @externs, $file;
@@ -64,11 +66,11 @@ sub mmz_analyze {
     close $mmz_fh;
     foreach (@dirs) {
         if ( ! -e ) {
-            my @cmd = ( @memoize_extract, '--mkdir', $_ ); 
+            my @cmd = ( @memoize_extract, '--mkdir', $_ );
             print "mmz_analyze: Making directory '$_' safely by running\n",
                   " @cmd\n";
             mkdir $_;
-        }        
+        }
     }
 
     rdb_ensure_files_here( @externs );
@@ -77,7 +79,7 @@ sub mmz_analyze {
     if (@externs ) {
         $mmz_has_new = $mmz_file;
     }
-    return 0; 
+    return 0;
 }
 
 #-----------------------------------------------------
@@ -94,7 +96,7 @@ sub mmz_extract_new {
         print "mmz_extract_new : ENV{$_} = '$ENV{$_}'\n";
     }
     my @cmd = (@memoize_extract, '--format', 'latex',
-                    '--pdf', $pdf_file, $mmz_file_no_path ); 
+                    '--pdf', $pdf_file, $mmz_file_no_path );
 
     if ( ! -e $pdf_file ) {
         warn "mmz_extract_new: Cannot generate externs here, since no pdf file generated\n";
@@ -116,7 +118,7 @@ sub mmz_cleanup {
     use strict;
     print "============= I am mmz_cleanup \n";
     my @cmd = ( @memoize_clean, '--all', '--yes',
-                      '--prefix', $aux_dir, 
+                      '--prefix', $aux_dir,
                       "$aux_dir1$$Pbase.mmz" );
     print "mmz_cleanup: Running\n @cmd\n";
     my $ret = system @cmd;
@@ -125,4 +127,3 @@ sub mmz_cleanup {
 }
 
 #-----------------------------------------------------
-
