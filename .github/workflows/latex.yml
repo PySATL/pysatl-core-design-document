@@ -19,6 +19,8 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
           persist-credentials: true
+          submodules: recursive
+          fetch-depth: 0
 
       - name: Compile LaTeX
         uses: xu-cheng/latex-action@v4
