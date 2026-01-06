@@ -1,119 +1,96 @@
-\subsection{Модуль Distributions}
-В основе лежит класс \texttt{Distribution}, представленный в виде протокола Python. Это означает, что конкретные классы могут \emph{реализовать} интерфейс \texttt{Distribution}, не наследуясь от общего базового класса. По этой причине почти все поля \texttt{Distribution} экспонируются как свойства (\texttt{@property}); обзор ключевых элементов модуля показан на рис.~\ref{fig:uml-distributions}.
+\subsection{Модуль \texttt{distributions}}
+\label{subsec:distributions-module}
 
-\begin{figure}[h]
+Компонент \texttt{distributions} задаёт единый контракт распределения и инфраструктуру вычислений. Ключевое проектное решение состоит в том, что пользовательский объект распределения предоставляет лишь минимальный набор свойств и методов, а выбор конкретных алгоритмов делегируется стратегиям и глобальному реестру характеристик. Такая схема отделяет описание распределения от правил вывода и обеспечивает расширяемость.
+
+\subsubsection{Контракт \texttt{Distribution} и стратегии}
+
+На рис.~\ref{fig:uml-distribution-and-strategies} показан интерфейс \texttt{Distribution} в виде протокола Python. Использование протокола позволяет реализовывать распределения как в составе ядра, так и в стороннем коде без принудительного наследования от общего базового класса.
+
+\begin{figure}[H]
   \centering
-  \includegraphics[width=.66\linewidth,trim=4mm 4mm 4mm 4mm,clip]{assets/images/Distrs.png}
-  \caption{UML-обзор модуля \texttt{Distributions}: протокол \texttt{Distribution},
-  типы \texttt{DistributionType}, стратегии \texttt{SamplingStrategy}/\texttt{ComputationStrategy},
-  выборки и базовые реализации по умолчанию.}
-  \label{fig:uml-distributions}
+  \includegraphics[width=.85\linewidth]{distributions.distribution-and-strategies.png}
+  \caption{\texttt{Distribution} и связанные стратегии вычислений и сэмплирования, а также представление выборки}
+  \label{fig:uml-distribution-and-strategies}
 \end{figure}
 
-\subsubsection{Тип распределения (\texttt{DistributionType})}
-
-\texttt{DistributionType} — маркерный тип, задающий родовую принадлежность распределения и цепочку наследований признаков, которые принципиально различают семейства распределений. Пример: \texttt{EuclidianDistributionType} со свойствами \texttt{kind} (\texttt{Discrete}/\texttt{Continuous}) и размерностью (евклидово пространство фиксированной размерности). Этот тип не содержит логики вычислений, но определяет область применимости правил преобразований характеристик.
-
-\subsubsection{Стратегии: выборки и вычислений}
-
-\textbf{Стратегия сэмплирования (\texttt{SamplingStrategy}).}
-Свойство \texttt{sampling\_strategy} определяет алгоритм генерации выборки из распределения. Стратегия по умолчанию использует квантили (\texttt{ppf}) в сочетании с равномерным распределением для генерации входных вероятностей.
-
-\textbf{Стратегия вычислений (\texttt{ComputationStrategy}).}
-Свойство \texttt{computation\_strategy} задаёт политику получения функциональных характеристик. Стратегия принимает решения: выдавать ли характеристику из аналитически заданных, читать её из кэша, либо строить через цепочку преобразований. В реализации по умолчанию применяется следующий порядок:
-\begin{enumerate}
-  \item проверка наличия аналитической реализации целевой характеристики;
-  \item проверка кэша результатов;
-  \item поиск пути на графе реестра преобразований (см.~\S\ref{subsec:registry}) и пошаговое вычисление.
-\end{enumerate}
-Базовая стратегия поддерживает кэширование; кэш прозрачен для вызывающей стороны.
-
-\subsubsection{Аналитические характеристики (\texttt{AnalyticalComputation})}
-
-\texttt{AnalyticalComputation} — это набор функциональных характеристик, заданных в явном (аналитическом) виде и не требующих вывода через другие характеристики. Для каждого конкретного распределения должен существовать хотя бы один такой «якорь», обеспечивающий возможность построения остальных характеристик через реестр преобразований. Здесь \emph{не} подразумевается внешняя «база данных»; речь идёт о \emph{базисе} характеристик самого распределения.
-
-\subsubsection{Выборки и правдоподобие}
-
-\texttt{Sample} и \texttt{ArraySample} — лёгкие обёртки над массивами \texttt{NumPy}, хранящие выборку и метаданные. Для любой реализации \texttt{Distribution} возможно:
-\begin{itemize}
-  \item сгенерировать выборку согласно \texttt{sampling\_strategy};
-  \item вычислить (лог-)\,функцию правдоподобия для этой выборки.
+Интерфейс \texttt{Distribution} фиксирует:
+\begin{itemize}[compact]
+  \item \texttt{distribution\_type}: тип распределения (см.~рис.~\ref{fig:types}), используемый для задания признаков и ограничения применимости правил;
+  \item \texttt{support}: объект носителя (support), описывающий допустимые значения случайной величины;
+  \item \texttt{analytical\_computations}: словарь аналитически заданных вычислений характеристик, выступающих «якорями» для вывода остальных;
+  \item \texttt{sampling\_strategy} и \texttt{computation\_strategy}: взаимозаменяемые политики генерации выборки и выбора метода вычисления.
 \end{itemize}
 
-\subsubsection{Протокол вычисления характеристики (\texttt{Computation})}
-
-\texttt{Computation} — абстракция вычислительной процедуры для конкретной характеристики (структура на рис.~\ref{fig:uml-computation}):
-\begin{itemize}
-  \item \texttt{target} — идентификатор целевой характеристики;
-  \item \texttt{\_\_call\_\_} — унифицированный вызов вычисления.
+Вычисления инициируются через два метода:
+\begin{itemize}[compact]
+  \item \texttt{query\_method(...)} возвращает вызываемый объект (метод вычисления) для указанной характеристики;
+  \item \texttt{calculate\_characteristic(...)} выполняет вычисление немедленно, применяя найденный метод к переданному аргументу.
 \end{itemize}
-\texttt{AnalyticalComputation} реализует \texttt{Computation}. Расширение протокола — \texttt{FittedComputationMethod}: оно вводит понятие \emph{источников} (\emph{sources}) — набора характеристик, из которых получается новая. Конкретная реализация \texttt{FittedComputationMethod} заполняет все поля и предоставляет функцию \texttt{func}, задающую фактическое преобразование.
+Такое разделение удобно для переиспользования: один и тот же метод может быть запрошен один раз и затем применён к набору входных значений.
 
-Отдельно выделяется \texttt{ComputationMethod} — абстракция для сложных вычислений, которые не укладываются в сигнатуру вызова \texttt{FittedComputationMethod}. В частности, \texttt{ComputationMethod} намеренно \emph{не} определяет \texttt{fit} как \texttt{\_\_call\_\_}, поскольку его сигнатура отличается. Такое разделение упрощает кэширование и повторное использование результатов.
+\paragraph{Стратегия вычислений.}
+\texttt{ComputationStrategy} отвечает за выбор конкретного способа получения характеристики. Реализация по умолчанию (\texttt{DefaultComputationStrategy}) решает две задачи: выбирает, можно ли вернуть аналитическую реализацию напрямую, и, при необходимости, строит вычисление через граф преобразований характеристик, дополняя это кэшированием результатов «подгонки» методов (fitting).
 
-\begin{figure}[h]
+\paragraph{Стратегия сэмплирования.}
+\texttt{SamplingStrategy} инкапсулирует алгоритм генерации выборки и возвращает объект, реализующий протокол \texttt{Sample}. Базовая реализация \texttt{DefaultSamplingStrategy} задаёт безопасный путь по умолчанию, а специализированные стратегии могут учитывать особенности распределения, генератора случайных чисел или требования к качеству сэмплирования.
+
+\subsubsection{Вычислительная модель характеристик}
+
+Единая модель вычислений показана на рис.~\ref{fig:uml-computations}. В ядре различаются:
+\begin{itemize}[compact]
+  \item \textbf{\texttt{Computation}} --- минимальный контракт вычисления конкретной характеристики (\texttt{target}) как вызываемого объекта;
+  \item \textbf{\texttt{AnalyticalComputation}} --- прямое (аналитическое) вычисление, не требующее предварительной подготовки;
+  \item \textbf{\texttt{ComputationMethod}} --- «шаблон» вычисления, который сначала \emph{подгоняется} под конкретное распределение (\texttt{fit}), а затем превращается в \textbf{\texttt{FittedComputationMethod}} --- вызываемый объект, пригодный для многократного применения.
+\end{itemize}
+
+\begin{figure}[H]
   \centering
-  \includegraphics[width=.66\linewidth,trim=4mm 4mm 4mm 4mm,clip]{assets/images/Computation.png}
-  \caption{Вычислительная модель: \texttt{Computation}, \texttt{AnalyticalComputation},
-  \texttt{FittedComputationMethod} и \texttt{ComputationMethod}; целевая характеристика (\texttt{target}),
-  источники (\texttt{sources}) и единый механизм вызова.}
-  \label{fig:uml-computation}
+  \includegraphics[width=.78\linewidth]{distributions.computations.png}
+  \caption{Абстракции вычислений характеристик: аналитические вычисления, методы и подогнанные методы}
+  \label{fig:uml-computations}
 \end{figure}
 
-\subsubsection{Имена характеристик и единый механизм вызова}
+Ключевое различие между \texttt{ComputationMethod} и \texttt{FittedComputationMethod} состоит в том, что «подгонка» позволяет захватить параметры распределения, выбранные численные настройки и подготовленные структуры данных (например, сетки или табличные аппроксимации). Это делает кэширование эффективным: стратегия может хранить уже подогнанные методы и не выполнять подготовку повторно.
 
-\texttt{GenericCharacteristicName} — типизированное имя характеристики (не протокол). Вызов для любой характеристики унифицирован:
-\begin{enumerate}
-  \item у стратегии, закреплённой за распределением, запрашивается подходящий метод для \texttt{target};
-  \item полученный метод вызывается над переданными данными.
-\end{enumerate}
+Поле \texttt{sources} фиксирует зависимости: вычисление целевой характеристики (\texttt{target}) может требовать значений других характеристик. Эти зависимости используются стратегией вычислений при построении цепочки вывода по графу реестра.
 
-\textbf{Опции вычислений (\texttt{\textbf{**options}}).}
-И \texttt{Characteristic}, и \texttt{ComputationMethod} поддерживают дополнительные параметры, влияющие на ход вычислений. Пример: при восстановлении \texttt{ppf} по \texttt{cdf} можно задать стратегию выбора ветви \texttt{most\_left}/\texttt{most\_right}. Конкретная стратегия \emph{может} проигнорировать опцию, однако пользователь волен подключить собственную стратегию, которая эти опции учитывает.
+\subsubsection{Носитель (support)}
 
-\subsubsection{Реестр преобразований характеристик}
-\label{subsec:registry}
+Носитель случайной величины оформлена как самостоятельный объект. Это позволяет валидировать значения, выражать свойства области определения в правилах вывода, и унифицировать обработку непрерывных и дискретных случаев. На рис.~\ref{fig:uml-support} показана структура интерфейсов носителей.
 
-Сердцем архитектуры является \texttt{DistributionTypeRegister} — синглтон, содержащий для каждого \texttt{DistributionType} ориентированный граф переходов между характеристиками (см. рис.~\ref{fig:uml-register}).
-
-\textbf{Структура графа.}
-\begin{itemize}
-  \item Узлы — имена характеристик.
-  \item Рёбра — помечены парами \{имя, \texttt{ComputationMethod}\}. Имя по умолчанию зарезервировано как
-  \[
-    \texttt{DEFAULT\_COMPUTATION\_KEY} \equiv \texttt{"PySATL\_default\_computation"}.
-  \]
-  Зарезервированное имя используется для поставляемых реализаций по умолчанию и не рекомендуется для пользовательских методов, чтобы избежать непреднамеренного переопределения.
-\end{itemize}
-
-\textbf{Классификация узлов.}
-Все характеристики делятся на:
-\begin{itemize}
-  \item \emph{definitive} — однозначно задающие распределение (например, \texttt{pdf}, \texttt{cdf}, \texttt{ppf});
-  \item \emph{indefinitive} — вычислимые по известным характеристикам, но не задающие распределение однозначно (например, математическое ожидание, дисперсия, медиана).
-\end{itemize}
-
-\textbf{Инварианты.}
-\begin{enumerate}
-  \item Подграф \emph{definitive}-узлов всегда связен: из любой definitive-характеристики существует путь в любую другую.
-  \item \emph{Indefinitive}-узлы являются стоками: обратных рёбер из них в множество definitive нет.
-\end{enumerate}
-
-\textbf{Операции реестра.}
-Предоставляются следующие методы управления графом:
-\begin{itemize}
-  \item \texttt{register\_definitive(name)} — регистрация \emph{единственного} начального definitive-узла в пустом графе. Если попытаться добавить второй исходный узел, сработает проверка инвариантов и будет брошено исключение.
-  \item \texttt{add\_bidirectional\_conversion(a, b, method\_ab, method\_ba)} — либо добавляет пару взаимосвязанных узлов в пустой граф, либо присоединяет новый узел к уже существующему связному компоненту (рёбра в обе стороны обязательны, иначе нарушится связность definitive-подграфа).
-  \item \texttt{add\_conversion(a, b, method, name?)} — добавляет альтернативный маршрут между уже соединёнными узлами; тем самым поддерживаются множественные реализации преобразования.
-  \item Служебные запросы: \texttt{is\_definitive(name)}, \texttt{definitive\_nodes()}, \texttt{indefinitive\_nodes()}, \texttt{all\_nodes()}.
-  \item Поиск маршрута: \texttt{find\_path(source, target)} — стандартный \texttt{BFS} по графу, используемый стратегией по умолчанию и доступный пользователю при реализации собственных стратегий.
-\end{itemize}
-
-\begin{figure}[h]
+\begin{figure}[H]
   \centering
-  \includegraphics[width=.5\linewidth,trim=4mm 4mm 4mm 4mm,clip]{assets/images/Register.png}
-  \caption{Реестр преобразований для типа распределения: \texttt{DistributionTypeRegister}
-  и \texttt{GenericCharacteristicRegister} с инвариантами (связность definitive-подграфа,
-  отсутствие обратных рёбер из indefinitive).}
-  \label{fig:uml-register}
+  \includegraphics[width=.75\linewidth]{distributions.support.png}
+  \caption{Модель носителя: \texttt{Support}, \texttt{DiscreteSupport} и базовые реализации}
+  \label{fig:uml-support}
 \end{figure}
+
+Для непрерывного одномерного случая используется интервальное представление (\texttt{Interval1D}), из которого наследуется \texttt{ContinuousSupport}. Для дискретного случая предусмотрены две базовые реализации: \texttt{ExplicitTableDiscreteSupport} (конечное множество точек) и \texttt{IntegerLatticeDiscreteSupport} (целочисленная решётка). Наличие итераторов по точкам и ближайшим значениям позволяет строить численные процедуры, зависящие от структуры support.
+
+\subsubsection{Глобальный реестр характеристик}
+\label{subsec:characteristic-registry}
+
+Центральным механизмом расширения является глобальный синглтон \texttt{CharacteristicRegistry} (рис.~\ref{fig:uml-registry}). Реестр хранит:
+\begin{itemize}[compact]
+  \item множество известных характеристик и их классификацию на \emph{definitive}/\emph{indefinitive};
+  \item ориентированный граф переходов между характеристиками;
+  \item набор вариантов (label-ов) для одного и того же перехода, позволяющий иметь несколько реализаций;
+  \item ограничения применимости правил (constraints), зависящие от признаков типа распределения и/или экземпляра.
+\end{itemize}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=.8\linewidth]{distributions.registry.png}
+  \caption{Реестр характеристик: ограничения применимости, метаданные рёбер, глобальный \texttt{CharacteristicRegistry} и локальный \texttt{RegistryView}}
+  \label{fig:uml-registry}
+\end{figure}
+
+\paragraph{Ограничения применимости.}
+Ограничение задаётся как предикат \texttt{allows(...)} и может проверять как свойства распределения, так и произвольные дополнительные признаки, поставляемые через \texttt{DistributionType.registry\_features}. Составное ограничение \texttt{GraphPrimitiveConstraint} позволяет выражать правила вида «данная характеристика/переход присутствует только при выполнении условий на тип распределения и параметры экземпляра».
+
+\paragraph{Локальный вид графа.}
+Метод \texttt{CharacteristicRegistry.view(distr)} строит \texttt{RegistryView} --- представление графа, отфильтрованное под конкретное распределение. В \texttt{RegistryView} доступны операции навигации (\texttt{successors}/\texttt{predecessors}), перечисление вариантов перехода между двумя узлами и поиск пути \texttt{find\_path}. Именно \texttt{RegistryView} используется стратегией вычислений, что позволяет отделить глобальную конфигурацию реестра от конкретного контекста выполнения.
+
+\paragraph{Варианты переходов и предпочтения.}
+Переход между одной и той же парой характеристик может иметь несколько вариантов, различающихся метками (\texttt{label}) и/или ограничениями. Поле \texttt{label\_preference} в реестре задаёт порядок предпочтения, а стратегия вычислений может дополнительно выбирать вариант на основании \texttt{**options}.

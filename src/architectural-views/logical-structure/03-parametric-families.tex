@@ -1,160 +1,55 @@
 \subsection{Модуль \texttt{families}}
-Модуль \texttt{families} предоставляет фреймворк для работы с параметрическими семействами распределений в Python. Система позволяет определять семейства распределений с множественными параметризациями, ограничениями на параметры и методами вычисления характеристик распределений.
+\label{subsec:families-module}
 
-\subsubsection{Общий обзор}
+Компонент \texttt{families} обеспечивает описание параметрических семейств распределений и построение конкретных экземпляров распределений из параметров. В отличие от \texttt{distributions}, который фиксирует «как вычислять», модуль \texttt{families} фиксирует «что такое распределение данного семейства»: набор параметров, допустимость значений, носитель и базовые (аналитические) характеристики.
 
-На \picref{fig:class-diagram-families} представлена UML-диаграмма классов модуля \texttt{families}
-
-\begin{figure}[h]
+\begin{figure}[H]
     \centering
-    \includegraphics[width=\figurewidth]{assets/images/families-class-diagram.png}
-    \caption{Диаграмма классов модуля families}
-    \label{fig:class-diagram-families}
+    \includegraphics[width=.9\linewidth]{families.png}
+    \caption{Ключевые классы модуля \texttt{families}: семейство, параметризации, распределение и реестр семейств}
+    \label{fig:uml-families}
 \end{figure}
 
-Реестр семейств, используется, чтобы в будущем можно было реализовывать переходы между распределениями из семейств, при каких-то операциях
+\subsubsection{Семейство распределений: \texttt{ParametricFamily}}
 
-Каждое семейство является объектом класса \texttt{ParametricFamily}. Это позволяет использовать систему с реестром, а также:
+\texttt{ParametricFamily} представляет одно семейство распределений и хранит:
 \begin{itemize}[compact]
-    \item Добавлять пользовательские параметризации для распределений;
-    \item Добавлять новые \texttt{AnalyticalComputation} для распределений,
-\end{itemize}
-не модифицируя исходный код семейства. 
-
-На данный момент за работу с несколькими параметризациями отвечает класс \texttt{ParametrizationSpec}. Его объекты описывают какие параметризации есть у семейства, и кто из них является канонической. Сейчас используется следующий механизм: все аналитические вычисления задаются в базовой параметризации, далее каждая параметризация указывает, как из нее получить базовую параметризацию. 
-
-\subsubsection{Основные компоненты системы}
-
-\noindent \texttt{ParametricFamiliesRegister} (Реестр параметрических семейств)
-\begin{itemize}[noitemsep, topsep=0pt, parsep=0pt]
-    \item \textbf{Назначение}: Синглтон-класс для глобальной регистрации и доступа ко всем параметрическим семействам.\item \textbf{Поля}:
-    \begin{itemize}[compact]
-        \item \texttt{\_instance} - единственный экземпляр реестра
-        \item \texttt{\_registered\_families} - словарь зарегистрированных семейств
-    \end{itemize}
-    \item \textbf{Методы}:
-    \begin{itemize}[compact]
-        \item \texttt{get(name)} - получение семейства по имени
-        \item \texttt{register(family)} - регистрация нового семейства
-    \end{itemize}
+    \item набор доступных параметризаций и имя базовой параметризации;
+    \item правила приведения параметров к базовой форме;
+    \item аналитические реализации характеристик, привязанные к параметризациям;
+    \item \texttt{support\_resolver} --- функцию/объект, выводящий носитель распределения по параметрам.
 \end{itemize}
 
-\noindent \texttt{ParametrizationConstraint} (Ограничение параметризации)
-\begin{itemize}[noitemsep, topsep=0pt, parsep=0pt]
-    \item \textbf{Назначение}: Контейнер для ограничений на значения параметров распределения.
+Семейство предоставляет фабричный метод \texttt{distribution(...)}. Он принимает значения параметров (и, опционально, имя параметризации), валидирует их и возвращает объект \texttt{ParametricFamilyDistribution}, реализующий протокол \texttt{Distribution}. Таким образом, дальнейшие вычисления выполняются уже в инфраструктуре \texttt{distributions}.
 
-    \item \textbf{Поля}:
-    \begin{itemize}[compact]
-        \item \texttt{description} - текстовое описание ограничения
-        \item \texttt{check} - функция проверки ограничения
-    \end{itemize}
-\end{itemize}
+\subsubsection{Параметризации и ограничения}
 
-\noindent \texttt{Parametrization} (Абстрактный класс параметризации)
-\begin{itemize}[noitemsep, topsep=0pt, parsep=0pt]
-    \item \textbf{Назначение}: Абстрактный базовый класс для всех параметризаций распределений.
-
-    \item \textbf{Поля}:
-    \begin{itemize}[compact]
-        \item \texttt{constraints} - список ограничений параметров
-    \end{itemize}
-
-    \item \textbf{Абстрактные свойства}:
-    \begin{itemize}[compact]
-        \item \texttt{name} - имя параметризации
-        \item \texttt{parameters} - словарь параметров
-    \end{itemize}
-
-    \item \textbf{Методы}:
-    \begin{itemize}[compact]
-        \item \texttt{validate()} - проверка всех ограничений
-        \item \texttt{transform\_to\_base\_parametrization()} - преобразование к базовой параметризации.
-    \end{itemize}
-\end{itemize}
-
-\noindent \texttt{ParametrizationSpec} (Спецификация параметризаций)
-\begin{itemize}[noitemsep, topsep=0pt, parsep=0pt]
-    \item \textbf{Назначение}: Контейнер для управления множественными параметризациями семейства.
-
-    \item \textbf{Поля}:
-    \begin{itemize}[compact]
-        \item \texttt{parametrizations} - словарь всех параметризаций
-        \item \texttt{base\_parametrization\_name} - имя базовой параметризации
-    \end{itemize}
-
-    \item \textbf{Методы}:
-    \begin{itemize}[compact]
-        \item \texttt{base} - получение класса базовой параметризации
-        \item \texttt{add\_parametrization()} - добавление новой параметризации
-        \item \texttt{get\_base\_parameters()} - преобразование параметров к базовой форме
-    \end{itemize}
-\end{itemize}
-
-
-\noindent \texttt{ParametricFamily} (Параметрическое семейство)
-\begin{itemize}[noitemsep, topsep=0pt, parsep=0pt]
-    \item \textbf{Назначение}: Представление семейства распределений с различными параметризациями.
-
-    \item \textbf{Поля}:
-    \begin{itemize}[compact]
-        \item \texttt{name} - имя семейства
-        \item \texttt{distr\_type} - тип распределения
-        \item \texttt{parametrizations} - спецификация параметризаций
-        \item \texttt{distr\_characteristics} - характеристики распределения
-        \item \texttt{sampling\_strategy} - стратегия семплирования
-        \item \texttt{computation\_strategy} - стратегия вычислений
-    \end{itemize}
-
-    \item \textbf{Методы}:
-    \begin{itemize}[compact]
-        \item \texttt{\_\_call\_\_()} - создание экземпляра распределения
-    \end{itemize}
-\end{itemize}
-
-
-\noindent \texttt{ParametricFamilyDistribution} (Конкретное распределение)
-\begin{itemize}[noitemsep, topsep=0pt, parsep=0pt]
-    \item \textbf{Назначение}: Конкретный экземпляр распределения с определенными параметрами. Реализует протокол \texttt{Distribution}
-
-    \item \textbf{Поля}:
-    \begin{itemize}[compact]
-        \item \texttt{distr\_name} - имя семейства
-        \item \texttt{distribution\_type} - тип распределения
-        \item \texttt{parameters} - параметры распределения
-    \end{itemize}
-
-    \item \textbf{Свойства}:
-    \begin{itemize}[compact]
-        \item \texttt{family} - ссылка на родительское семейство
-    \end{itemize}
-\end{itemize}
-
-\subsubsection{Типичные сценарии использования}
-
-\paragraph{Определение нового семейства распределений}
-Пользователь создает новое параметрическое семейство, определяя:
+Параметризация представлена классом \texttt{Parametrization}. Экземпляр параметризации содержит словарь значений параметров и предоставляет:
 \begin{itemize}[compact]
-    \item Различные параметризации (каноническая, mean-var, etc.)
-    \item Ограничения на параметры
-    \item Функции для вычисления характеристик (PDF, CDF, etc.), доступные аналитически 
-    \item Стратегии семплирования и вычислений
+    \item \texttt{validate()} --- проверку набора ограничений;
+    \item \texttt{transform\_to\_base\_parametrization()} --- преобразование параметров к базовой параметризации семейства.
 \end{itemize}
 
-\paragraph{Создание экземпляра распределения}
-Пользователь создает конкретное распределение, указывая:
+Ограничения оформляются объектами \texttt{ParametrizationConstraint} (описание + предикат \texttt{check}). Важное свойство такой схемы состоит в том, что ограничения задаются рядом с параметризацией и остаются локальными: добавление новой параметризации не требует модификации существующих.
+
+\subsubsection{Аналитические характеристики и план вывода}
+
+Семейство хранит набор аналитических реализаций характеристик (на уровне \texttt{GenericCharacteristicName}) и допускает, что разные характеристики удобнее задавать в разных параметризациях. Для этого используется \texttt{analytical\_plan}: он задаёт, к какой параметризации следует привести параметры, чтобы использовать доступную аналитическую формулу.
+
+На уровне экземпляра распределения (\texttt{ParametricFamilyDistribution}) формируется отображение \texttt{analytical\_computations}. Эти вычисления становятся «якорями» для дальнейшего вывода характеристик по реестру (см.~\S\ref{subsec:characteristic-registry}).
+
+\subsubsection{Экземпляр распределения: \texttt{ParametricFamilyDistribution}}
+
+\texttt{ParametricFamilyDistribution} связывает воедино:
 \begin{itemize}[compact]
-    \item Имя семейства
-    \item Параметризацию (как минимум одну)
-    \item Значения параметров
+    \item семейство и выбранную параметризацию;
+    \item конкретные значения параметров (в том числе в базовой форме);
+    \item \texttt{support} и \texttt{distribution\_type};
+    \item стратегии вычислений и сэмплирования.
 \end{itemize}
 
-\paragraph{Вычисление характеристик распределения}
-Система автоматически:
-\begin{itemize}[compact]
-    \item Проверяет корректность параметров
-    \item При необходимости преобразует к базовой параметризации
-    \item Вычисляет запрошенные характеристики
-\end{itemize}
+Такое распределение является полноценным объектом \texttt{Distribution}: оно может генерировать выборку через \texttt{sampling\_strategy} и вычислять характеристики через \texttt{computation\_strategy}.
 
-\paragraph{Генерация выборок}
-Используется зарегистрированная стратегия семплирования для генерации данных из распределения.
+\subsubsection{Глобальный реестр семейств}
+
+Для поддержки готовых семейств и интеграции с другими пакетами экосистемы введён синглтон \texttt{ParametricFamilyRegister}. Он предоставляет операции регистрации семейства, получения по имени и перечисления зарегистрированных семейств. Наличие отдельного реестра позволяет подключать «поставки» семейств из разных модулей, не связывая их напрямую.
